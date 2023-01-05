@@ -41,8 +41,6 @@ func main() {
 	}
 
 	cmd := exec.Command(bin, fmt.Sprintf("--app=http://%s", link))
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
 	cmd.Stdin = os.Stdin
 
 	_ = cmd.Run()
