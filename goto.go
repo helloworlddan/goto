@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"flag"
 	"fmt"
 	"os"
 	"os/exec"
@@ -24,8 +25,11 @@ func getChromeBinary() (string, error) {
 }
 
 func main() {
-	if len(os.Args) != 2 {
-		fmt.Fprintf(os.Stderr, "error: %v\n", fmt.Errorf("specify exactly one go link"))
+	urlToggle := flag.Bool("u", false, "don't interpret link as go/link")
+	flag.Parse()
+
+	if len(flag.Args()) != 1 {
+		fmt.Fprintf(os.Stderr, "error: %v\n", fmt.Errorf("specify exactly one go/link or use '-u URL'"))
 		os.Exit(-1)
 	}
 
@@ -35,12 +39,20 @@ func main() {
 		os.Exit(-1)
 	}
 
-	link := os.Args[1]
-	if !strings.HasPrefix(link, "go/") {
-		link = fmt.Sprintf("go/%s", link)
+	link := flag.Arg(0)
+
+	if *urlToggle {
+		if !strings.HasPrefix(link, "https://") {
+			link = fmt.Sprintf("https:///%s", link)
+		}
+	} else {
+		if !strings.HasPrefix(link, "go/") {
+			link = fmt.Sprintf("go/%s", link)
+		}
+		link = fmt.Sprintf("http:///%s", link)
 	}
 
-	cmd := exec.Command(bin, fmt.Sprintf("--app=http://%s", link))
+	cmd := exec.Command(bin, fmt.Sprintf("--app=%s", link))
 	cmd.Stdin = os.Stdin
 
 	_ = cmd.Run()
