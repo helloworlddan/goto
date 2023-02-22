@@ -24,12 +24,17 @@ func getChromeBinary() (string, error) {
 	return "", errors.New("no workable chrome binary found")
 }
 
+const corpAppSuffix = "corp.google.com" // example
+
 func main() {
 	urlToggle := flag.Bool("u", false, "don't interpret link as go/link")
+	corpToggle := flag.Bool("c", false, "interpret as corp app")
+	googleToggle := flag.Bool("g", false, "interpret as google app")
+
 	flag.Parse()
 
 	if len(flag.Args()) != 1 {
-		fmt.Fprintf(os.Stderr, "error: %v\n", fmt.Errorf("specify exactly one go/link or use '-u URL'"))
+		fmt.Fprintf(os.Stderr, "error: %v\n", fmt.Errorf("specify exactly one go/link. Alternatively, use '-u URL' or '-c app'"))
 		os.Exit(-1)
 	}
 
@@ -45,6 +50,10 @@ func main() {
 		if !strings.HasPrefix(link, "https://") {
 			link = fmt.Sprintf("https:///%s", link)
 		}
+	} else if *corpToggle {
+		link = fmt.Sprintf("https:///%s.%s", link, corpAppSuffix)
+	} else if *googleToggle {
+		link = fmt.Sprintf("https:///%s.%s", link, "google.com")
 	} else {
 		if !strings.HasPrefix(link, "go/") {
 			link = fmt.Sprintf("go/%s", link)
