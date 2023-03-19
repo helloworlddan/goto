@@ -30,13 +30,9 @@ func main() {
 	urlToggle := flag.Bool("u", false, "don't interpret link as go/link")
 	corpToggle := flag.Bool("c", false, "interpret as corp app")
 	googleToggle := flag.Bool("g", false, "interpret as google app")
+	profileOverride := flag.Int("p", 1, "override chrome profile index")
 
 	flag.Parse()
-
-	if len(flag.Args()) != 1 {
-		fmt.Fprintf(os.Stderr, "error: %v\n", fmt.Errorf("specify exactly one go/link. Alternatively, use '-u URL' or '-c app'"))
-		os.Exit(-1)
-	}
 
 	bin, err := getChromeBinary()
 	if err != nil {
@@ -44,25 +40,38 @@ func main() {
 		os.Exit(-1)
 	}
 
-	link := flag.Arg(0)
+	link := prepLink(flag.Arg(0), *urlToggle, *corpToggle, *googleToggle)
 
-	if *urlToggle {
+	prompt := fmt.Sprintf("%s --profile-directory='Profile %d'", bin, *profileOverride)
+	if len(link) > 0 {
+		prompt = fmt.Sprintf("%s --app='%s'", prompt, link)
+	}
+
+	// Apparently chrome inspects it's process parent and simply spawning a process directly fails.
+	// Spawning from with a shell as parent is somehow OK.
+	cmd := exec.Command("/bin/sh", "-c", prompt)
+	cmd.Stdin = os.Stdin
+	_ = cmd.Run()
+}
+
+func prepLink(link string, url, corp, google bool) string {
+	if url {
 		if !strings.HasPrefix(link, "https://") {
-			link = fmt.Sprintf("https:///%s", link)
+			link = fmt.Sprintf("https://%s", link)
 		}
-	} else if *corpToggle {
-		link = fmt.Sprintf("https:///%s.%s", link, corpAppSuffix)
-	} else if *googleToggle {
-		link = fmt.Sprintf("https:///%s.%s", link, "google.com")
-	} else {
+		return link
+	}
+	if corp {
+		return fmt.Sprintf("https://%s.%s", link, corpAppSuffix)
+	}
+	if google {
+		return fmt.Sprintf("https://%s.%s", link, "google.com")
+	}
+	if len(link) > 0 {
 		if !strings.HasPrefix(link, "go/") {
 			link = fmt.Sprintf("go/%s", link)
 		}
-		link = fmt.Sprintf("http:///%s", link)
+		return fmt.Sprintf("http://%s", link)
 	}
-
-	cmd := exec.Command(bin, fmt.Sprintf("--app=%s", link))
-	cmd.Stdin = os.Stdin
-
-	_ = cmd.Run()
+	return link
 }
