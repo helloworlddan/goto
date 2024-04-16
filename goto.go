@@ -55,6 +55,9 @@ func main() {
 }
 
 func prepLink(link string, url, corp, google bool) string {
+	if strings.HasPrefix(link, "localhost:") {
+		return fmt.Sprintf("http://%s", link)
+	}
 	if url {
 		if !strings.HasPrefix(link, "https://") {
 			link = fmt.Sprintf("https://%s", link)
