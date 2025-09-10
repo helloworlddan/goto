@@ -12,6 +12,7 @@ import (
 var chromeBinaries = [...]string{
 	"/usr/bin/google-chrome",
 	"/usr/bin/google-chrome-stable",
+	"/usr/local/bin/chrome",
 }
 
 func getChromeBinary() (string, error) {
